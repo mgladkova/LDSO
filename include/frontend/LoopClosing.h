@@ -102,7 +102,7 @@ namespace ldso {
 
         // shared_ptr<KeyFrameDatabase> kfDB = nullptr;
         shared_ptr<DBoW3::Database> kfDB = nullptr;
-        shared_ptr<ORBVocabulary> voc = nullptr;
+        shared_ptr<BoWVocabulary> voc = nullptr;
 
         shared_ptr<Frame> candidateKF = nullptr;
         vector<shared_ptr<Frame>> allKF;

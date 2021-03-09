@@ -13,23 +13,23 @@ using namespace ldso::internal;
 
 namespace ldso {
 
-    int FeatureMatcher::DescriptorDistance(const unsigned char *desc1, const unsigned char *desc2) {
-
-        int dist = 0;
-        const int *pa = (int *) desc1;
-        const int *pb = (int *) desc2;
-
-        for (int i = 0; i < 8; i++, pa++, pb++) {
-            unsigned int v = *pa ^*pb;
-#ifdef __SSE2__
-            dist += _mm_popcnt_u64(v);  // SSE is so easy
-#else
-            v = v - ( ( v >> 1 ) & 0x55555555 );
-            v = ( v & 0x33333333 ) + ( ( v >> 2 ) & 0x33333333 );
-            dist += ( ( ( v + ( v >> 4 ) ) & 0xF0F0F0F ) * 0x1010101 ) >> 24;
-#endif
+    float FeatureMatcher::DescriptorDistance(shared_ptr<Feature> feat1, shared_ptr<Feature> feat2) {
+        if (feat1->fType != feat2->fType){
+            LOG(WARNING) << "Distance between two different descriptor types is requested!";
+            return FLT_MAX;
         }
-        return dist;
+
+        if (feat1->fType == Feature::FeatureType::ORB){
+            auto orbFeat1 = dynamic_pointer_cast<ORB>(feat1);
+            auto orbFeat2 = dynamic_pointer_cast<ORB>(feat2);
+            return distance(orbFeat1->descriptor, orbFeat2->descriptor); 
+        } else if (feat2->fType == Feature::FeatureType::SUPEPROINT){
+            auto spFeat1 = dynamic_pointer_cast<SuperPoint>(feat1);
+            auto spFeat2 = dynamic_pointer_cast<SuperPoint>(feat2);
+            return distance(spFeat1->descriptor, spFeat2->descriptor); 
+        }
+
+        return FLT_MAX;
     }
 
     int FeatureMatcher::SearchBruteForce(shared_ptr<Frame> frame1, shared_ptr<Frame> frame2,
@@ -39,16 +39,18 @@ namespace ldso {
 
         for (size_t i = 0; i < frame1->features.size(); i++) {
             shared_ptr<Feature> f1 = frame1->features[i];
-            if (f1->isCorner == false)
+            if (!f1->isCorner)
                 continue;
+
             int min_dist = 9999;
             int min_dist_index = -1;
 
             for (size_t j = 0; j < frame2->features.size(); j++) {
                 shared_ptr<Feature> f2 = frame2->features[j];
-                if (f2->isCorner == false)
+                if (!f2->isCorner || f1->fType != f2->fType)
                     continue;
-                int dist = DescriptorDistance(f1->descriptor, f2->descriptor);
+                
+                float dist = DescriptorDistance(f1, f2);
                 if (dist < min_dist) {
                     min_dist = dist;
                     min_dist_index = j;
@@ -87,7 +89,7 @@ namespace ldso {
 
                     for (auto &idx2:vIdx2) {
                         auto &feat2 = frame2->features[frame2->bowIdx[idx2]];
-                        int dist = DescriptorDistance(feat1->descriptor, feat2->descriptor);
+                        int dist = DescriptorDistance(feat1, feat2);
                         if (dist < bestDist1) {
                             bestDist2 = bestDist1;
                             bestDist1 = dist;
@@ -121,6 +123,32 @@ namespace ldso {
         }
 
         return nmatches;
+    }
+
+    float FeatureMatcher::distance(const unsigned char *desc1, const unsigned char *desc2) {
+        float dist = 0.f;
+        const int *pa = (int *) desc1;
+        const int *pb = (int *) desc2;
+
+        for (int i = 0; i < 8; i++, pa++, pb++) {
+            unsigned int v = *pa ^*pb;
+#ifdef __SSE2__
+            dist += _mm_popcnt_u64(v);  // SSE is so easy
+#else
+            v = v - ( ( v >> 1 ) & 0x55555555 );
+            v = ( v & 0x33333333 ) + ( ( v >> 2 ) & 0x33333333 );
+            dist += ( ( ( v + ( v >> 4 ) ) & 0xF0F0F0F ) * 0x1010101 ) >> 24;
+#endif
+        }
+        return dist;
+    }
+
+    float FeatureMatcher::distance(const float *desc1, const float *desc2) {
+        float dist = 0.f;
+        for (int i = 0; i < 256; i++){
+            dist += fabs(desc1[i] - desc2[i]);
+        }
+        return dist;
     }
 
     int FeatureMatcher::DrawMatches(shared_ptr<Frame> f1, shared_ptr<Frame> f2, std::vector<Match> &matches) {

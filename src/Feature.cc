@@ -36,7 +36,8 @@ namespace ldso {
         }
     }
 
-    void Feature::save(ofstream &fout) {
+    void ORB::save(ofstream &fout) {
+        fout.write((char *) &fType, sizeof(Feature::FeatureType));
         fout.write((char *) &status, sizeof(status));
         fout.write((char *) &uv[0], sizeof(float));
         fout.write((char *) &uv[1], sizeof(float));
@@ -49,8 +50,8 @@ namespace ldso {
             point->save(fout);
     }
 
-    void Feature::load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs) {
-
+    void ORB::load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs) {
+        fin.read((char *) &fType, sizeof(Feature::FeatureType));
         fin.read((char *) &status, sizeof(status));
         fin.read((char *) &uv[0], sizeof(float));
         fin.read((char *) &uv[1], sizeof(float));
@@ -59,6 +60,33 @@ namespace ldso {
         fin.read((char *) &angle, sizeof(float));
         fin.read((char *) &score, sizeof(float));
         fin.read((char *) descriptor, sizeof(uchar) * 32);
+
+        if (status == Feature::FeatureStatus::VALID) {
+            point = shared_ptr<Point>(new Point);
+            point->load(fin, allKFs);
+        }
+    }
+
+    void SuperPoint::save(ofstream &fout) {
+        fout.write((char *) &fType, sizeof(Feature::FeatureType));
+        fout.write((char *) &status, sizeof(status));
+        fout.write((char *) &uv[0], sizeof(float));
+        fout.write((char *) &uv[1], sizeof(float));
+        fout.write((char *) &invD, sizeof(float));
+        fout.write((char *) &isCorner, sizeof(bool));
+        fout.write((char *) descriptor, sizeof(float) * 256);
+        if (point && status == Feature::FeatureStatus::VALID)
+            point->save(fout);
+    }
+
+    void SuperPoint::load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs) {
+        fin.read((char *) &fType, sizeof(Feature::FeatureType));
+        fin.read((char *) &status, sizeof(status));
+        fin.read((char *) &uv[0], sizeof(float));
+        fin.read((char *) &uv[1], sizeof(float));
+        fin.read((char *) &invD, sizeof(float));
+        fin.read((char *) &isCorner, sizeof(bool));
+        fin.read((char *) descriptor, sizeof(float) * 256);
 
         if (status == Feature::FeatureStatus::VALID) {
             point = shared_ptr<Point>(new Point);

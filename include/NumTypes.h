@@ -125,7 +125,6 @@ typedef vector<Vec2f, Eigen::aligned_allocator<Vec2f>> VecVec2f;
 typedef vector<Vec3f, Eigen::aligned_allocator<Vec3f>> VecVec3f;
 
 // DBoW vocabulary
-typedef DBoW3::Vocabulary ORBVocabulary;
-
+typedef DBoW3::Vocabulary BoWVocabulary;
 
 #endif // LDSO_NUM_TYPES_H_

@@ -81,7 +81,7 @@ namespace ldso {
          * compute bow vectors
          * @param voc vocabulary pointer
          */
-        void ComputeBoW(shared_ptr<ORBVocabulary> voc);
+        void ComputeBoW(shared_ptr<BoWVocabulary> voc);
 
         // get keyframes in window
         set<shared_ptr<Frame>> GetConnectedKeyFrames();

@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
         linc = -1;
     }
 
-    shared_ptr<ORBVocabulary> voc(new ORBVocabulary());
+    shared_ptr<BoWVocabulary> voc(new BoWVocabulary());
     voc->load(vocPath);
 
     shared_ptr<FullSystem> fullSystem(new FullSystem(voc));

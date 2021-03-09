@@ -191,6 +191,12 @@ void parseArgument(char *arg) {
         return;
     }
 
+    if (1 == sscanf(arg, "vocab=%s", buf)) {
+        vocPath = buf;
+        printf("loading BoW vocabulary from %s!\n", vocPath.c_str());
+        return;
+    }
+
     if (1 == sscanf(arg, "rescale=%f", &foption)) {
         rescale = foption;
         printf("RESCALE %f!\n", rescale);
@@ -285,7 +291,7 @@ int main(int argc, char **argv) {
         linc = -1;
     }
 
-    shared_ptr<ORBVocabulary> voc(new ORBVocabulary());
+    shared_ptr<BoWVocabulary> voc(new BoWVocabulary());
     voc->load(vocPath);
 
     shared_ptr<FullSystem> fullSystem(new FullSystem(voc));

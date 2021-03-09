@@ -22,7 +22,8 @@ namespace ldso {
                 printf("cv::imread did something strange! this may segfault. \n");
                 return 0;
             }
-            MinimalImageB *img = new MinimalImageB(m.cols, m.rows, m.data);
+            MinimalImageB *img = new MinimalImageB(m.cols, m.rows);
+            memcpy(img->data, m.data, m.rows * m.cols);
             return img;
         }
 
@@ -67,7 +68,8 @@ namespace ldso {
                 printf("cv::imdecode did something strange! this may segfault. \n");
                 return 0;
             }
-            MinimalImageB *img = new MinimalImageB(m.cols, m.rows, m.data);
+            MinimalImageB *img = new MinimalImageB(m.cols, m.rows);
+            memcpy(img->data, m.data, m.rows * m.cols);
             return img;
         }
 

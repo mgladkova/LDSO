@@ -30,7 +30,7 @@ namespace ldso {
          */
         int DetectCorners(int nFeatures, shared_ptr<Frame> &frame);
 
-        int ComputeDescriptor(shared_ptr<Frame> &frame, shared_ptr<Feature> feat);
+        int ComputeORBDescriptor(shared_ptr<Frame> &frame, shared_ptr<Feature> feat);
 
         /**
          * debug stuffs

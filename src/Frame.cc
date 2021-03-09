@@ -85,18 +85,28 @@ namespace ldso {
         return indices;
     }
 
-    void Frame::ComputeBoW(shared_ptr<ORBVocabulary> voc) {
+    void Frame::ComputeBoW(shared_ptr<BoWVocabulary> voc) {
         // convert corners into BoW
         vector<cv::Mat> allDesp;
         for (size_t i = 0; i < features.size(); i++) {
             auto &feat = features[i];
-            if (feat->isCorner) {
+            if (!feat->isCorner) {
+                continue;
+            }
+
+            if (feat->fType == Feature::FeatureType::ORB){
+                shared_ptr<ORB> orbFeat = std::dynamic_pointer_cast<ORB>(feat);
                 cv::Mat m(1, 32, CV_8U);
-                for (int k = 0; k < 32; k++)
-                    m.data[k] = feat->descriptor[k];
+                memcpy(m.data, orbFeat->descriptor, sizeof(uchar) * 32);
                 allDesp.push_back(m);
                 bowIdx.push_back(i);
-            }
+            } else if (feat->fType == Feature::FeatureType::SUPEPROINT){
+                shared_ptr<SuperPoint> spFeat = std::dynamic_pointer_cast<SuperPoint>(feat);
+                cv::Mat m(1, 256, CV_32F);
+                memcpy(m.data, spFeat->descriptor, sizeof(float) * 256);
+                allDesp.push_back(m);
+                bowIdx.push_back(i);
+            } 
         }
         voc->transform(allDesp, bowVec, featVec, 4);
     }
@@ -166,12 +176,18 @@ namespace ldso {
         int nufeatures = 0;
         fin.read((char *) &nufeatures, sizeof(int));
         features.resize(nufeatures, nullptr);
-        for (auto &feat: features) {
-            feat = shared_ptr<Feature>(new Feature(0, 0, thisFrame));
-        }
 
         int n = 0;
         for (auto &feat: features) {
+            fin.read((char *) &feat->fType, sizeof(Feature::FeatureType));
+            if (feat->fType == Feature::FeatureType::ORB){
+                feat = shared_ptr<ORB>(new ORB(0, 0, thisFrame));
+            } else if (feat->fType == Feature::FeatureType::SUPEPROINT){
+                feat = shared_ptr<SuperPoint>(new SuperPoint(0, 0, thisFrame));
+            } else {
+                LOG(WARNING) << "Unsupported feature type detected!";
+                return;
+            }
             feat->load(fin, allKF);
             if (feat->status == Feature::FeatureStatus::VALID) {
                 feat->point->mHostFeature = feat;

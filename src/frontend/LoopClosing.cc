@@ -364,27 +364,23 @@ namespace ldso {
 
             for (size_t &k: indices) {
                 shared_ptr<Feature> &feat = currentKF->features[k];
-                if (fabsf(feat->angle - p->angle) < 0.2) {
-                    // check rotation first
-                    int dist = FeatureMatcher::DescriptorDistance(feat->descriptor,
-                                                                  p->descriptor);
+                float dist = FeatureMatcher::DescriptorDistance(feat, p);
 
-                    int ui = int(feat->uv[0] + 0.5f), vi = int(feat->uv[1] + 0.5f);
-                    idepth = idepthMap[vi * wG[0] + ui];
+                int ui = int(feat->uv[0] + 0.5f), vi = int(feat->uv[1] + 0.5f);
+                idepth = idepthMap[vi * wG[0] + ui];
 
-                    if (idepth == 0) {
-                        // NOTE don't need this idepth =0 because we need to estimate the scale
-                        // well in stereo case you can still do this
-                        continue;
-                    }
+                if (idepth == 0) {
+                    // NOTE don't need this idepth =0 because we need to estimate the scale
+                    // well in stereo case you can still do this
+                    continue;
+                }
 
-                    if (dist < bestDist) {
-                        bestDist2 = bestDist;
-                        bestDist = dist;
-                        bestIdx = k;
-                    } else if (dist < bestDist2) {
-                        bestDist2 = dist;
-                    }
+                if (dist < bestDist) {
+                    bestDist2 = bestDist;
+                    bestDist = dist;
+                    bestIdx = k;
+                } else if (dist < bestDist2) {
+                    bestDist2 = dist;
                 }
             }
 

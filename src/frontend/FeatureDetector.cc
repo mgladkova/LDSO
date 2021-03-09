@@ -41,6 +41,7 @@ namespace ldso {
         float maxScore = 0, scoreTH = 0;
         int skip = (HALF_PATCH_SIZE * 2 / gridsize) + 1;
 
+        vector<shared_ptr<ORB>> features;
         for (int gx = skip; gx < gridX - skip; gx++) {  // 最边上的不要
             for (int gy = skip; gy < gridY - skip; gy++) {
 
@@ -82,9 +83,9 @@ namespace ldso {
                     int x = p.first % gridsize;
                     int y = p.first / gridsize;
                     int realX = gx * gridsize + x, realY = gy * gridsize + y;
-                    shared_ptr<Feature> feat(new Feature(realX, realY, frame));
+                    shared_ptr<ORB> feat(new ORB(realX, realY, frame));
                     feat->score = p.second;
-                    frame->features.push_back(feat);
+                    features.push_back(feat);
                     picked++;
 
                     if (picked > (nfeatInGrid))
@@ -96,8 +97,8 @@ namespace ldso {
 
         // find the corners
         scoreTH = 0.01 * maxScore;
-        vector<shared_ptr<Feature>> corners;
-        for (auto &feat: frame->features) {
+        vector<shared_ptr<ORB>> corners;
+        for (auto &feat: features) {
             if (feat->score > scoreTH) {
                 feat->isCorner = true;
                 corners.push_back(feat);
@@ -118,38 +119,41 @@ namespace ldso {
         }
 
         int cntCornerSelected = 0;
-        for (auto &feat: frame->features) {
+        for (auto &feat: features) {
             if (feat->isCorner) {
                 feat->angle = IC_Angle(
                         frame->frameHessian->dIp[feat->level], Vec2f(feat->uv[0], feat->uv[1]), feat->level);
-                ComputeDescriptor(frame, feat);
+                ComputeORBDescriptor(frame, feat);
                 cntCornerSelected++;
             }
         }
+
+        frame->features.insert(frame->features.end(), features.begin(), features.end());
         return cntCornerSelected;
     }
 
-    int FeatureDetector::ComputeDescriptor(shared_ptr<Frame> &frame, shared_ptr<Feature> feat) {
+    int FeatureDetector::ComputeORBDescriptor(shared_ptr<Frame> &frame, shared_ptr<Feature> feat) {
 
         const float factorPI = (float) (CV_PI / 180.f);
 
-        float angle = feat->angle * factorPI;
+        shared_ptr<ORB> orbFeat = std::dynamic_pointer_cast<ORB>(feat);
+        float angle = orbFeat->angle * factorPI;
         float a = (float) cosf(angle), b = (float) sinf(angle);
         Vec3f *img = frame->frameHessian->dIp[feat->level];
 
         int level = 0;
-        float ul = feat->uv[0];
-        float vl = feat->uv[1];
+        float ul = orbFeat->uv[0];
+        float vl = orbFeat->uv[1];
 
-        while (level < feat->level) {
+        while (level < orbFeat->level) {
             ul *= 0.5;
             vl *= 0.5;
             level++;
         }
 
-        const Vec3f *center = img + (int(vl) * wG[feat->level] + (int) ul);
+        const Vec3f *center = img + (int(vl) * wG[orbFeat->level] + (int) ul);
 
-        const int step = wG[feat->level];
+        const int step = wG[orbFeat->level];
 
         int *pattern = bit_pattern_31_;
 #define GET_VALUE(idx) \
@@ -182,7 +186,7 @@ namespace ldso {
             t1 = GET_VALUE(30);
             val |= (t0 < t1) << 7;
 
-            feat->descriptor[i] = (uchar) val;
+            orbFeat->descriptor[i] = (uchar) val;
         }
 #undef GET_VALUE
         return 0;

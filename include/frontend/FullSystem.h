@@ -56,7 +56,7 @@ namespace ldso {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-        FullSystem(shared_ptr<ORBVocabulary> voc);
+        FullSystem(shared_ptr<BoWVocabulary> voc);
 
         ~FullSystem();
 
@@ -318,8 +318,10 @@ namespace ldso {
         FeatureDetector detector;   // feature detector
         // ========================== loop closing ==================================== //
     public:
-        shared_ptr<ORBVocabulary> vocab = nullptr;  // vocabulary
+        shared_ptr<BoWVocabulary> vocab = nullptr;  // vocabulary
         shared_ptr<LoopClosing> loopClosing = nullptr;  // loop closing
+
+        Feature::FeatureType mainFeatType;
 
         // ========================= visualization =================================== //
     public:

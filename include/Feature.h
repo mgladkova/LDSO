@@ -28,7 +28,9 @@ namespace ldso {
      * NOTE outlier features will also be kept in frame know. If you worry about the memory cost you can just clean them
      */
 
-    struct Feature {
+    class Feature {
+    protected:
+        Feature(float u, float v, shared_ptr<Frame> host) : host(host), uv(Vec2f(u, v)) {}
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
@@ -41,9 +43,12 @@ namespace ldso {
             OUTLIER          // the immature point diverges, or the map point becomes an outlier
         };  // the status of feature
 
-        Feature(float u, float v, shared_ptr<Frame> host) : host(host), uv(Vec2f(u, v)) {}
+        enum FeatureType {
+            ORB = 0,
+            SUPEPROINT
+        };
 
-        ~Feature() {}
+        virtual ~Feature() {}
 
         /**
          * Create a map point from the immature structure
@@ -69,9 +74,9 @@ namespace ldso {
         }
 
         // save and load
-        void save(ofstream &fout);
+        virtual void save(ofstream &fout) = 0;
 
-        void load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs);
+        virtual void load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs) = 0;
 
         // =====================================================================================================
         FeatureStatus status = IMMATURE;   // status of this feature
@@ -83,14 +88,36 @@ namespace ldso {
         shared_ptr<Point> point = nullptr;    // corresponding 3D point, nullptr if it is an immature point
 
         // feature stuffs
-        float angle = 0;        // rotation
-        float score = 0;        // shi-tomasi score
         bool isCorner = false; // indicating if this is a corner
         int level = 0;         // which pyramid level is the feature computed
-        unsigned char descriptor[32] = {0};  // ORB descriptors
-
+        float score = 0;        // shi-tomasi score for ORB, confidence for SuperPoint
+        
+        FeatureType fType = FeatureType::ORB;
         // internal structures for optimizing immature points
         shared_ptr<internal::ImmaturePoint> ip = nullptr;  // the immature point
+    };
+
+    class ORB : public Feature {
+        public:
+            ORB(float u, float v, shared_ptr<Frame> host) : Feature(u, v, host) {}
+
+            void save(ofstream &fout);
+            void load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs);
+            
+            float angle = 0;        // rotation
+            unsigned char descriptor[32] = {0};  // ORB descriptors
+            FeatureType fType = FeatureType::ORB;
+    };
+
+    class SuperPoint : public Feature {
+        public:
+            SuperPoint(float u, float v, shared_ptr<Frame> host) : Feature(u, v, host) {}
+
+            void save(ofstream &fout);
+            void load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs);
+            
+            float descriptor[256] = {0};
+            FeatureType fType = FeatureType::SUPEPROINT;
     };
 }
 

@@ -1471,12 +1471,11 @@ void Vocabulary::clear(){
     m_words.clear();
 
 }
-int Vocabulary::getDescritorSize()const
-{
+int Vocabulary::getDescriptorSize() const {
     if (m_words.size()==0)return -1;
     else return m_words[0]->descriptor.cols;
 }
-int Vocabulary::getDescritorType()const{
+int Vocabulary::getDescriptorType() const {
 
     if (m_words.size()==0)return -1;
     else return m_words[0]->descriptor.type();

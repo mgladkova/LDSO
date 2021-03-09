@@ -21,7 +21,7 @@ using namespace ldso::internal;
 
 namespace ldso {
 
-    FullSystem::FullSystem(shared_ptr<ORBVocabulary> voc) :
+    FullSystem::FullSystem(shared_ptr<BoWVocabulary> voc) :
         coarseDistanceMap(new CoarseDistanceMap(wG[0], hG[0])),
         coarseTracker(new CoarseTracker(wG[0], hG[0])),
         coarseTracker_forNewKF(new CoarseTracker(wG[0], hG[0])),
@@ -44,6 +44,19 @@ namespace ldso {
 
         pixelSelector = shared_ptr<PixelSelector>(new PixelSelector(wG[0], hG[0]));
         selectionMap = new float[wG[0] * hG[0]];
+
+        int descrType = vocab->getDescriptorType();
+        int descrSize = vocab->getDescriptorSize();
+        if (descrType == CV_8U && descrSize == 32){
+            mainFeatType = Feature::FeatureType::ORB;
+            LOG(INFO) << "ORB vocabulary is loaded!";
+        } else if (descrType == CV_32F && descrSize == 256){
+            mainFeatType = Feature::FeatureType::SUPEPROINT;
+            LOG(INFO) << "SuperPoint vocabulary is loaded!";
+        } else {
+            LOG(ERROR) << "Unsupported feature type from provided vocabulary!";
+            return;
+        }
 
         if (setting_enableLoopClosing) {
             loopClosing = shared_ptr<LoopClosing>(new LoopClosing(this));
@@ -1292,7 +1305,12 @@ namespace ldso {
                     int i = x + y * wG[0];
                     if (selectionMap[i] == 0) continue;
 
-                    shared_ptr<Feature> feat(new Feature(x, y, newFrame->frame));
+                    shared_ptr<Feature> feat;
+                    if (mainFeatType == Feature::FeatureType::ORB){
+                        feat = shared_ptr<ORB>(new ORB(x, y, newFrame->frame));
+                    } else if (mainFeatType == Feature::FeatureType::SUPEPROINT){
+                        feat = shared_ptr<SuperPoint>(new SuperPoint(x, y, newFrame->frame));
+                    }
                     feat->ip = shared_ptr<ImmaturePoint>(
                         new ImmaturePoint(newFrame->frame, feat, selectionMap[i], Hcalib->mpCH));
                     if (!std::isfinite(feat->ip->energyTH)) {
@@ -1310,7 +1328,7 @@ namespace ldso {
             for (int i = 0; i < setting_desiredImmatureDensity; i++) {
                 int x = rng.uniform(20, wG[0] - 20);
                 int y = rng.uniform(20, hG[0] - 20);
-                shared_ptr<Feature> feat(new Feature(x, y, newFrame->frame));
+                shared_ptr<ORB> feat(new ORB(x, y, newFrame->frame));
                 feat->ip = shared_ptr<ImmaturePoint>(
                     new ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
                 if (!std::isfinite(feat->ip->energyTH)) {
@@ -1357,7 +1375,12 @@ namespace ldso {
                 continue;
             Pnt *point = coarseInitializer->points[0] + i;
 
-            shared_ptr<Feature> feat(new Feature(point->u + 0.5f, point->v + 0.5f, firstFrame->frame));
+            shared_ptr<Feature> feat;
+            if (mainFeatType == Feature::FeatureType::ORB){
+                feat = shared_ptr<ORB>(new ORB(point->u + 0.5f, point->v + 0.5f, firstFrame->frame));
+            } else if (mainFeatType == Feature::FeatureType::SUPEPROINT){
+                feat = shared_ptr<SuperPoint>(new SuperPoint(point->u + 0.5f, point->v + 0.5f, firstFrame->frame));
+            }
             feat->ip = shared_ptr<ImmaturePoint>(
                 new ImmaturePoint(firstFrame->frame, feat, point->my_type, Hcalib->mpCH));
 

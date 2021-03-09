@@ -31,7 +31,7 @@ namespace ldso {
                 nnRatio(nnRatio), checkOrientation(checkRot) {}
 
         /// the distance of two descriptors
-        static int DescriptorDistance(const unsigned char *desc1, const unsigned char *desc2);
+        static float DescriptorDistance(shared_ptr<Feature> f1, shared_ptr<Feature> f2);
 
         /**
          * Brute-force Search for feature matching
@@ -55,6 +55,9 @@ namespace ldso {
         int DrawMatches( shared_ptr<Frame> frame1, shared_ptr<Frame> frame2, std::vector<Match>& matches );
 
     private:
+        static float distance(const unsigned char* descr1, const unsigned char* descr2);
+        static float distance(const float* descr1, const float* descr2);
+
         float nnRatio = 0.6;
         bool checkOrientation = true;
 

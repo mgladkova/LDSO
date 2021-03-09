@@ -55,6 +55,9 @@ namespace ldso {
 
             inline void
             reduce(function<void(int, int, Running *, int)> callPerIndex, int first, int end, int stepSize = 0) {
+
+                memset(&stats, 0, sizeof(Running));
+
                 if (stepSize == 0)
                     stepSize = ((end - first) + NUM_THREADS - 1) / NUM_THREADS;
 
@@ -140,7 +143,8 @@ namespace ldso {
 
                         assert(callPerIndex != 0);
 
-                        Running s(0);
+                        Running s;
+                        memset(&s, 0, sizeof(Running));
                         callPerIndex(todo, std::min(todo + stepSize, maxIndex), &s, idx);
                         gotOne[idx] = true;
                         lock.lock();
@@ -150,7 +154,8 @@ namespace ldso {
                         if (!gotOne[idx]) {
                             lock.unlock();
                             assert(callPerIndex != 0);
-                            Running s(0);
+                            Running s;
+                            memset(&s, 0, sizeof(Running));
                             callPerIndex(0, 0, &s, idx);
                             gotOne[idx] = true;
                             lock.lock();
