@@ -33,10 +33,15 @@ find_package(OpenCV REQUIRED)
 find_package(Glog REQUIRED)
 find_package(Pangolin REQUIRED)
 
+find_package(Torch REQUIRED)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  set(TORCH_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0")
+endif()
+
 # optional libs
 find_package(LibZip QUIET)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wno-deprecated -march=native -Wno-duplicate-decl-specifier -Wno-ignored-qualifiers -Wno-reorder -Wno-missing-braces")
+set(CMAKE_CXX_FLAGS "-Wall -Wno-deprecated -march=native -Wno-ignored-qualifiers -Wno-reorder -Wno-missing-braces")
 
 if(NOT APPLE)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -62,6 +67,7 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/thirdparty/
         ${PROJECT_SOURCE_DIR}/thirdparty/g2o/
         ${PROJECT_SOURCE_DIR}/thirdparty/DBoW3/
+        ${PROJECT_SOURCE_DIR}/thirdparty/libtorch/include/
 )
 
 set( THIRD_PARTY_LIBS
@@ -70,7 +76,7 @@ set( THIRD_PARTY_LIBS
         ${Pangolin_LIBRARIES}
         ${PROJECT_SOURCE_DIR}/thirdparty/g2o/lib/libg2o${CMAKE_SHARED_LIBRARY_SUFFIX}
         ${PROJECT_SOURCE_DIR}/thirdparty/DBoW3/build/src/libDBoW3${CMAKE_SHARED_LIBRARY_SUFFIX}
-        ${LIBZIP_LIBRARY}
+        ${TORCH_LIBRARIES}
 )
 
 add_subdirectory(src)
