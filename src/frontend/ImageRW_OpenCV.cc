@@ -6,6 +6,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #else
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/core/eigen.hpp>
 #endif
 
 namespace ldso {
@@ -21,8 +22,7 @@ namespace ldso {
                 printf("cv::imread did something strange! this may segfault. \n");
                 return 0;
             }
-            MinimalImageB *img = new MinimalImageB(m.cols, m.rows);
-            memcpy(img->data, m.data, m.rows * m.cols);
+            MinimalImageB *img = new MinimalImageB(m.cols, m.rows, m.data);
             return img;
         }
 
@@ -36,6 +36,7 @@ namespace ldso {
                 printf("cv::imread did something strange! this may segfault. \n");
                 return 0;
             }
+
             MinimalImageB3 *img = new MinimalImageB3(m.cols, m.rows);
             memcpy(img->data, m.data, 3 * m.rows * m.cols);
             return img;
@@ -66,8 +67,7 @@ namespace ldso {
                 printf("cv::imdecode did something strange! this may segfault. \n");
                 return 0;
             }
-            MinimalImageB *img = new MinimalImageB(m.cols, m.rows);
-            memcpy(img->data, m.data, m.rows * m.cols);
+            MinimalImageB *img = new MinimalImageB(m.cols, m.rows, m.data);
             return img;
         }
 
