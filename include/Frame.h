@@ -165,7 +165,7 @@ namespace ldso {
         shared_ptr<internal::FrameHessian> frameHessian = nullptr;  // internal data
 
         // ===== debug stuffs ======= //
-        cv::Mat imgDisplay;    // image to display, only for debugging, remain an empty image if setting_show_loopclosing is false
+        cv::Mat imgDisplay;
     };
 
     /**

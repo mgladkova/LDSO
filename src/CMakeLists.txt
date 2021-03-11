@@ -28,9 +28,12 @@ add_library(ldso
         frontend/PixelSelector2.cc
         frontend/Undistort.cc
         frontend/ImageRW_OpenCV.cc
+        frontend/SuperPointExtractor.cc
 )
 
 target_link_libraries(
         ldso
         ${THIRD_PARTY_LIBS}
 )
+
+set_property(TARGET ldso PROPERTY CXX_STANDARD 14)

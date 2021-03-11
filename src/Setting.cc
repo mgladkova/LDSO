@@ -129,6 +129,8 @@ namespace ldso {
     bool setting_fastLoopClosing = true;
     bool setting_showLoopClosing = false;
 
+    string setting_superPointModelPath = "superpoint.pt";
+
     void handleKey(char k) {
         char kkk = k;
         switch (kkk) {

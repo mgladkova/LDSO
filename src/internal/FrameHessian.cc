@@ -100,14 +100,12 @@ namespace ldso {
             }
 
             // === debug stuffs === //
-            if (setting_enableLoopClosing && setting_showLoopClosing) {
-                frame->imgDisplay = cv::Mat(hG[0], wG[0], CV_8UC3);
-                uchar *data = frame->imgDisplay.data;
-                for (int i = 0; i < w * h; i++) {
-                    for (int c = 0; c < 3; c++) {
-                        *data = color[i] > 255 ? 255 : uchar(color[i]);
-                        data++;
-                    }
+            frame->imgDisplay = cv::Mat(hG[0], wG[0], CV_8UC3);
+            uchar *data = frame->imgDisplay.data;
+            for (int i = 0; i < w * h; i++) {
+                for (int c = 0; c < 3; c++) {
+                    *data = color[i] > 255 ? 255 : uchar(color[i]);
+                    data++;
                 }
             }
         }

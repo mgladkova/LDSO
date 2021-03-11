@@ -2,6 +2,8 @@
 #ifndef LDSO_SETTING_H_
 #define LDSO_SETTING_H_
 
+#include <string>
+
 /// a lot many parameters set in DSO
 namespace ldso {
 
@@ -183,6 +185,7 @@ namespace ldso {
     // this is only for debugging (and for plotting when writing a paper)
     extern bool setting_showLoopClosing;
 
+    extern std::string setting_superPointModelPath;
     // use the ninth pattern (described in DSO's paper)
 #define patternP staticPattern[8]
 

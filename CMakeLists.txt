@@ -41,7 +41,7 @@ endif()
 # optional libs
 find_package(LibZip QUIET)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wno-deprecated -march=native -Wno-ignored-qualifiers -Wno-reorder -Wno-missing-braces")
+set(CMAKE_CXX_FLAGS "-Wall -Wno-class-memaccess -Wno-deprecated -march=native -Wno-ignored-qualifiers -Wno-reorder -Wno-missing-braces")
 
 if(NOT APPLE)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -81,3 +81,4 @@ set( THIRD_PARTY_LIBS
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(test)
