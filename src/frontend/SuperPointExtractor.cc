@@ -10,9 +10,12 @@ namespace ldso {
         torch::load(model, setting_superPointModelPath);
     }
 
-    void SuperPointExtractor::detectAndDescribe(int nFeatures, cv::Mat img, shared_ptr<Frame> frame, std::vector<shared_ptr<SuperPoint>>& features){
+    void SuperPointExtractor::DetectAndDescribe(int nFeatures, cv::Mat img, shared_ptr<Frame> frame,
+                                                std::vector<shared_ptr<SuperPoint>>& features){
         if (img.cols * img.rows != 0){
-            torch::Tensor x = torch::from_blob(img.clone().data, {1, 1, img.rows, img.cols}, torch::kByte);
+            cv::Mat imgCopy = img.clone();
+            torch::Tensor imgT = torch::from_blob(imgCopy.data, {1, 1, imgCopy.rows, imgCopy.cols}, torch::kByte);
+            torch::Tensor x = imgT.clone();
             x = x.to(torch::kFloat) / 255; // convert image entries to [0, 1] range
             x = x.set_requires_grad(false);
 
@@ -21,18 +24,17 @@ namespace ldso {
             torch::Tensor kpts = result.first;
             torch::Tensor desc = result.second;
 
-            float maxScore = -1.f;
-            for (auto x = 0; x < kpts.size(1); x++){
-                for (auto y = 0; y < kpts.size(0); y++){
-                    maxScore = max(maxScore, kpts[y][x].item<float>());
+            /*float maxScore = -1.f;
+            for (auto xx = 0; xx < kpts.size(1); xx++){
+                for (auto yy= 0; yy < kpts.size(0); yy++){
+                    maxScore = max(maxScore, kpts[yy][xx].item<float>());
                 }
             }
 
-            LOG(INFO) << "MAX score = " << maxScore;
+            LOG(INFO) << "MAXSCORE = " << maxScore;*/
 
             // interpolate descriptor map at keypoint locations
             auto conf_kpts = torch::nonzero(kpts > conf_threshold); // [N, 2]
-            LOG(INFO) << conf_kpts.size(0) << " " << conf_kpts.size(1);
 
             torch::Tensor grid = torch::zeros({1, 1, conf_kpts.size(0), 2});
             grid[0][0].slice(1, 0, 1) = conf_kpts.slice(1, 1, 2) / (kpts.size(1) / 2.0) - 1;
@@ -50,6 +52,9 @@ namespace ldso {
             desc = desc.transpose(0, 1).contiguous();  // [N, 256]
 
             features.clear();
+            vector<shared_ptr<SuperPoint>> new_features;
+            new_features.reserve(conf_kpts.size(0));
+
             for (auto i = 0; i < conf_kpts.size(0); i++){
                 int y = conf_kpts[i][0].item<int>();
                 int x = conf_kpts[i][1].item<int>();
@@ -59,11 +64,30 @@ namespace ldso {
                 }
                 feat->isCorner = true;
                 feat->score = kpts[y][x].item<float>();
+                feat->fType = Feature::FeatureType::SUPEPROINT;
+                new_features.push_back(feat);
+            }
 
-                features.push_back(feat);
+            if (new_features.size() >= nFeatures){
+                sort(new_features.begin(), new_features.end(), [](shared_ptr<SuperPoint> feat1, shared_ptr<SuperPoint> feat2) { return feat1->score > feat2->score; });
+                for (auto i = 0 ; i < nFeatures; i++){
+                    features.push_back(new_features[i]);
+                }
+            } else {
+                features = new_features;
             }
         } else {
             LOG(WARNING) << "Empty image, skipping feature extraction!";
         }
+    }
+
+    void SuperPointExtractor::DrawFeatures(cv::Mat image, vector<shared_ptr<SuperPoint>> features){
+        cv::Mat imgCopy = image.clone();
+        //cv::cvtColor(image, imgCopy, cv::COLOR_GRAY2BGR);
+        for (size_t i = 0; i < features.size(); i++){
+            cv::circle(imgCopy, cv::Point(features[i]->uv[0], features[i]->uv[1]), 2, cv::Scalar(0, 0, 255), -1);
+        }
+        cv::imshow("Detected features", imgCopy);
+        cv::waitKey(3);
     }
 }

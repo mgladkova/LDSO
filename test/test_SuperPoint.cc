@@ -16,7 +16,7 @@ bool test_featureExtraction(std::string imagePath){
     std::vector<shared_ptr<SuperPoint>> features;
     shared_ptr<Frame> frame(new Frame());
     unique_ptr<SuperPointExtractor> spDetector(new SuperPointExtractor());
-    spDetector->detectAndDescribe(numFeatures, img, frame, features);
+    spDetector->DetectAndDescribe(numFeatures, img, frame, features);
 
     cv::Mat imgCopy;
     cv::cvtColor(img, imgCopy, cv::COLOR_GRAY2BGR);

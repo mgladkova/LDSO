@@ -96,8 +96,10 @@ namespace ldso {
     class SuperPointExtractor {
         public:
             SuperPointExtractor();
-            void detectAndDescribe(int nFeatures, cv::Mat img, shared_ptr<Frame> frame, std::vector<shared_ptr<SuperPoint>>& features);
+            void DetectAndDescribe(int nFeatures, cv::Mat img, shared_ptr<Frame> frame,
+                                   std::vector<shared_ptr<SuperPoint>>& features);
 
+            void DrawFeatures(cv::Mat image, vector<shared_ptr<SuperPoint>> features);
         private:
             shared_ptr<SuperPointNet> model;
             float conf_threshold = 0.01;

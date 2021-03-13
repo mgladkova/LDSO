@@ -53,6 +53,7 @@ namespace ldso {
         } else if (descrType == CV_32F && descrSize == 256){
             mainFeatType = Feature::FeatureType::SUPEPROINT;
             LOG(INFO) << "SuperPoint vocabulary is loaded!";
+            spDetector = std::shared_ptr<SuperPointExtractor>(new SuperPointExtractor());
         } else {
             LOG(ERROR) << "Unsupported feature type from provided vocabulary!";
             return;
@@ -1283,61 +1284,68 @@ namespace ldso {
     }
 
     void FullSystem::makeNewTraces(shared_ptr<FrameHessian> newFrame, float *gtDepth) {
-
-        if (setting_pointSelection == 1) {
-            LOG(INFO) << "using LDSO point selection strategy " << endl;
-            newFrame->frame->features.reserve(setting_desiredImmatureDensity);
-            detector.DetectCorners(setting_desiredImmatureDensity, newFrame->frame);
-            for (auto &feat: newFrame->frame->features) {
-                // create a immature point
-                feat->ip = shared_ptr<ImmaturePoint>(
-                    new ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
-            }
-            LOG(INFO) << "new features features created: " << newFrame->frame->features.size() << endl;
-        } else if (setting_pointSelection == 0) {
-            LOG(INFO) << "using original DSO point selection strategy" << endl;
-            pixelSelector->allowFast = true;
-            int numPointsTotal = pixelSelector->makeMaps(newFrame, selectionMap, setting_desiredImmatureDensity);
-            newFrame->frame->features.reserve(numPointsTotal);
-
-            for (int y = patternPadding + 1; y < hG[0] - patternPadding - 2; y++)
-                for (int x = patternPadding + 1; x < wG[0] - patternPadding - 2; x++) {
-                    int i = x + y * wG[0];
-                    if (selectionMap[i] == 0) continue;
-
-                    shared_ptr<Feature> feat;
-                    if (mainFeatType == Feature::FeatureType::ORB){
-                        feat = shared_ptr<ORB>(new ORB(x, y, newFrame->frame));
-                    } else if (mainFeatType == Feature::FeatureType::SUPEPROINT){
-                        feat = shared_ptr<SuperPoint>(new SuperPoint(x, y, newFrame->frame));
-                    }
+        if (mainFeatType == Feature::FeatureType::ORB){
+            if (setting_pointSelection == 1) {
+                LOG(INFO) << "using LDSO point selection strategy " << endl;
+                newFrame->frame->features.reserve(setting_desiredImmatureDensity);
+                detector.DetectCorners(setting_desiredImmatureDensity, newFrame->frame);
+                for (auto &feat: newFrame->frame->features) {
+                    // create a immature point
                     feat->ip = shared_ptr<ImmaturePoint>(
-                        new ImmaturePoint(newFrame->frame, feat, selectionMap[i], Hcalib->mpCH));
+                        new ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
+                }
+                LOG(INFO) << "new features features created: " << newFrame->frame->features.size() << endl;
+            } else if (setting_pointSelection == 0) {
+                LOG(INFO) << "using original DSO point selection strategy" << endl;
+                pixelSelector->allowFast = true;
+                int numPointsTotal = pixelSelector->makeMaps(newFrame, selectionMap, setting_desiredImmatureDensity);
+                newFrame->frame->features.reserve(numPointsTotal);
+
+                for (int y = patternPadding + 1; y < hG[0] - patternPadding - 2; y++)
+                    for (int x = patternPadding + 1; x < wG[0] - patternPadding - 2; x++) {
+                        int i = x + y * wG[0];
+                        if (selectionMap[i] == 0) continue;
+
+                        shared_ptr<Feature> feat = shared_ptr<ORB>(new ORB(x, y, newFrame->frame));
+                        feat->ip = shared_ptr<ImmaturePoint>(
+                            new ImmaturePoint(newFrame->frame, feat, selectionMap[i], Hcalib->mpCH));
+                        if (!std::isfinite(feat->ip->energyTH)) {
+                            feat->ReleaseAll();
+                            continue;
+                        } else
+                            newFrame->frame->features.push_back(feat);
+                    }
+                LOG(INFO) << "new features features created: " << newFrame->frame->features.size() << endl;
+            } else if (setting_pointSelection == 2) {
+                // random pick
+                LOG(INFO) << "using random point selection strategy" << endl;
+                cv::RNG rng;
+                newFrame->frame->features.reserve(setting_desiredImmatureDensity);
+                for (int i = 0; i < setting_desiredImmatureDensity; i++) {
+                    int x = rng.uniform(20, wG[0] - 20);
+                    int y = rng.uniform(20, hG[0] - 20);
+                    shared_ptr<ORB> feat(new ORB(x, y, newFrame->frame));
+                    feat->ip = shared_ptr<ImmaturePoint>(
+                        new ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
                     if (!std::isfinite(feat->ip->energyTH)) {
                         feat->ReleaseAll();
                         continue;
                     } else
                         newFrame->frame->features.push_back(feat);
                 }
-            LOG(INFO) << "new features features created: " << newFrame->frame->features.size() << endl;
-        } else if (setting_pointSelection == 2) {
-            // random pick
-            LOG(INFO) << "using random point selection strategy" << endl;
-            cv::RNG rng;
-            newFrame->frame->features.reserve(setting_desiredImmatureDensity);
-            for (int i = 0; i < setting_desiredImmatureDensity; i++) {
-                int x = rng.uniform(20, wG[0] - 20);
-                int y = rng.uniform(20, hG[0] - 20);
-                shared_ptr<ORB> feat(new ORB(x, y, newFrame->frame));
-                feat->ip = shared_ptr<ImmaturePoint>(
-                    new ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
-                if (!std::isfinite(feat->ip->energyTH)) {
-                    feat->ReleaseAll();
-                    continue;
-                } else
-                    newFrame->frame->features.push_back(feat);
+                LOG(INFO) << "new features features created: " << newFrame->frame->features.size() << endl;
             }
-            LOG(INFO) << "new features features created: " << newFrame->frame->features.size() << endl;
+        } else if (mainFeatType == Feature::FeatureType::SUPEPROINT){
+            vector<shared_ptr<SuperPoint>> spFeatures;
+            spDetector->DetectAndDescribe(setting_desiredImmatureDensity, newFrame->frame->imgDisplay, newFrame->frame, spFeatures);
+            for (auto& feat : spFeatures){
+                feat->ip = shared_ptr<internal::ImmaturePoint>(
+                    new internal::ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
+                newFrame->frame->features.push_back(feat);
+            }
+            //spDetector->DrawFeatures(newFrame->frame->imgDisplay, spFeatures);
+        } else {
+            LOG(WARNING) << "Unsupported feature type!";
         }
     }
 
@@ -1377,9 +1385,13 @@ namespace ldso {
 
             shared_ptr<Feature> feat;
             if (mainFeatType == Feature::FeatureType::ORB){
+                LOG(INFO) << "INITIALIZE WITH ORB FEATURES";
                 feat = shared_ptr<ORB>(new ORB(point->u + 0.5f, point->v + 0.5f, firstFrame->frame));
             } else if (mainFeatType == Feature::FeatureType::SUPEPROINT){
+                LOG(INFO) << "INITIALIZE WITH SUPEPROINT FEATURES";
                 feat = shared_ptr<SuperPoint>(new SuperPoint(point->u + 0.5f, point->v + 0.5f, firstFrame->frame));
+            } else {
+                LOG(INFO) << "INITIALIZE WITH NONE FEATURES";
             }
             feat->ip = shared_ptr<ImmaturePoint>(
                 new ImmaturePoint(firstFrame->frame, feat, point->my_type, Hcalib->mpCH));

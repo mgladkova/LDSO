@@ -45,7 +45,8 @@ namespace ldso {
 
         enum FeatureType {
             ORB = 0,
-            SUPEPROINT
+            SUPEPROINT,
+            NONE
         };
 
         virtual ~Feature() {}
@@ -91,8 +92,8 @@ namespace ldso {
         bool isCorner = false; // indicating if this is a corner
         int level = 0;         // which pyramid level is the feature computed
         float score = 0;        // shi-tomasi score for ORB, confidence for SuperPoint
-        
-        FeatureType fType = FeatureType::ORB;
+
+        FeatureType fType = FeatureType::NONE;
         // internal structures for optimizing immature points
         shared_ptr<internal::ImmaturePoint> ip = nullptr;  // the immature point
     };
@@ -103,7 +104,7 @@ namespace ldso {
 
             void save(ofstream &fout);
             void load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs);
-            
+
             float angle = 0;        // rotation
             unsigned char descriptor[32] = {0};  // ORB descriptors
             FeatureType fType = FeatureType::ORB;
@@ -115,7 +116,7 @@ namespace ldso {
 
             void save(ofstream &fout);
             void load(ifstream &fin, vector<shared_ptr<Frame>> &allKFs);
-            
+
             float descriptor[256] = {0};
             FeatureType fType = FeatureType::SUPEPROINT;
     };

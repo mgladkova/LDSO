@@ -20,6 +20,7 @@
 
 #include "internal/IndexThreadReduce.h"
 #include "LoopClosing.h"
+#include "SuperPointExtractor.h"
 
 using namespace std;
 using namespace ldso;
@@ -316,6 +317,7 @@ namespace ldso {
     public:
         shared_ptr<Map> globalMap = nullptr;    // global map
         FeatureDetector detector;   // feature detector
+        shared_ptr<SuperPointExtractor> spDetector;
         // ========================== loop closing ==================================== //
     public:
         shared_ptr<BoWVocabulary> vocab = nullptr;  // vocabulary

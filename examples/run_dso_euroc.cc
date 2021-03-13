@@ -29,6 +29,7 @@ std::string source = "/home/xiang/Dataset/EUROC/MH_01_easy/cam0";
 std::string output_file = "./results.txt";
 std::string calib = "./examples/EUROC/EUROC.txt";
 std::string vocPath = "./vocab/orbvoc.dbow3";
+std::string superPointNetPath = "";
 
 int startIdx = 0;
 int endIdx = 100000;
@@ -197,6 +198,12 @@ void parseArgument(char *arg) {
         return;
     }
 
+    if (1 == sscanf(arg, "spNet=%s", buf)) {
+        superPointNetPath = buf;
+        printf("loading SuperPoint pre-trained network from %s!\n", superPointNetPath.c_str());
+        return;
+    }
+
     if (1 == sscanf(arg, "rescale=%f", &foption)) {
         rescale = foption;
         printf("RESCALE %f!\n", rescale);
@@ -293,6 +300,12 @@ int main(int argc, char **argv) {
 
     shared_ptr<BoWVocabulary> voc(new BoWVocabulary());
     voc->load(vocPath);
+    int descrType = voc->getDescriptorType();
+    int descrSize = voc->getDescriptorSize();
+
+    if (descrType == CV_32F && descrSize == 256){
+        setting_superPointModelPath = superPointNetPath;
+    }
 
     shared_ptr<FullSystem> fullSystem(new FullSystem(voc));
     fullSystem->setGammaFunction(reader->getPhotometricGamma());
