@@ -102,6 +102,7 @@ namespace ldso {
             void DrawFeatures(cv::Mat image, vector<shared_ptr<SuperPoint>> features);
         private:
             shared_ptr<SuperPointNet> model;
+            torch::Device device;
             float conf_threshold = 0.01;
     };
 }

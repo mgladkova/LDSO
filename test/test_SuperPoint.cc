@@ -30,6 +30,19 @@ bool test_featureExtraction(std::string imagePath){
     return true;
 }
 
+bool test_tensorAllocation(){
+    int array[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    auto options = torch::TensorOptions().dtype(torch::kInt);
+    torch::Tensor tensorArr = torch::from_blob(array, {2, 5}, options);
+    int* ptr = tensorArr.data_ptr<int>();
+
+    for (int i = 0; i < 10; i++){
+        std::cout << *(ptr++) << " ";
+    }
+    std::cout << std::endl;
+    return true;
+}
+
 
 int main(int argc, char** argv){
     if (argc < 3){
@@ -40,5 +53,7 @@ int main(int argc, char** argv){
     setting_superPointModelPath = std::string(argv[1]);
 
     test_featureExtraction(std::string(argv[2]));
+
+    test_tensorAllocation();
     return 0;
 }

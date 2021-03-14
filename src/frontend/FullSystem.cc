@@ -16,6 +16,8 @@
 #include <iomanip>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <chrono>
+
 using namespace ldso;
 using namespace ldso::internal;
 
@@ -1288,7 +1290,11 @@ namespace ldso {
             if (setting_pointSelection == 1) {
                 LOG(INFO) << "using LDSO point selection strategy " << endl;
                 newFrame->frame->features.reserve(setting_desiredImmatureDensity);
+                auto t_start = chrono::high_resolution_clock::now();
                 detector.DetectCorners(setting_desiredImmatureDensity, newFrame->frame);
+                auto t_end = chrono::high_resolution_clock::now();
+                cout << "ORB Detection time = " << double(std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count()) / 1e6 << " ms" << endl;
+
                 for (auto &feat: newFrame->frame->features) {
                     // create a immature point
                     feat->ip = shared_ptr<ImmaturePoint>(
@@ -1337,13 +1343,17 @@ namespace ldso {
             }
         } else if (mainFeatType == Feature::FeatureType::SUPEPROINT){
             vector<shared_ptr<SuperPoint>> spFeatures;
+            auto t_start = chrono::high_resolution_clock::now();
             spDetector->DetectAndDescribe(setting_desiredImmatureDensity, newFrame->frame->imgDisplay, newFrame->frame, spFeatures);
+            auto t_end = chrono::high_resolution_clock::now();
+            cout << "SP Inference time = " << double(std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count()) / 1e6 << " ms" << endl;
+
             for (auto& feat : spFeatures){
                 feat->ip = shared_ptr<internal::ImmaturePoint>(
                     new internal::ImmaturePoint(newFrame->frame, feat, 1, Hcalib->mpCH));
                 newFrame->frame->features.push_back(feat);
             }
-            //spDetector->DrawFeatures(newFrame->frame->imgDisplay, spFeatures);
+            spDetector->DrawFeatures(newFrame->frame->imgDisplay, spFeatures);
         } else {
             LOG(WARNING) << "Unsupported feature type!";
         }
